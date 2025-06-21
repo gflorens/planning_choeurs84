@@ -1,44 +1,341 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="utf-8">
-  <title>Calendrier des Concerts</title>
-  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.9/index.global.min.js"></script>
-  <style>
-    .fc-event { cursor: pointer; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier des Événements</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+        h1, h2 {
+            text-align: center;
+            color: #2c3e50;
+        }
+        .calendar-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .calendar-nav button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            margin: 0 10px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        .calendar-nav button:hover {
+            background-color: #2980b9;
+        }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 5px;
+            max-width: 900px;
+            margin: 0 auto;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 10px;
+        }
+        .day-header {
+            font-weight: bold;
+            text-align: center;
+            padding: 10px 5px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+        }
+        .calendar-day {
+            border: 1px solid #ddd;
+            padding: 10px;
+            min-height: 100px;
+            background-color: #fafafa;
+            border-radius: 4px;
+            position: relative;
+            font-size: 14px;
+        }
+        .calendar-day.current-month {
+            background-color: #fff;
+        }
+        .calendar-day.outside-month {
+            background-color: #f0f0f0;
+            color: #aaa;
+        }
+        .day-number {
+            font-weight: bold;
+            font-size: 1.1em;
+            color: #555;
+            margin-bottom: 5px;
+            display: block; /* Ensures it takes its own line */
+        }
+        .event {
+            background-color: #e74c3c;
+            color: white;
+            padding: 3px 6px;
+            border-radius: 3px;
+            margin-bottom: 3px;
+            font-size: 0.85em;
+            cursor: pointer;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        }
+        .event:hover {
+            background-color: #c0392b;
+        }
+
+        /* Popup Styles */
+        .popup-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .popup-content {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 90%;
+            position: relative;
+            text-align: left;
+        }
+        .popup-content h3 {
+            margin-top: 0;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .popup-content p {
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+        .popup-content p strong {
+            color: #3498db;
+        }
+        .close-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #777;
+        }
+        .close-btn:hover {
+            color: #333;
+        }
+    </style>
 </head>
 <body>
-  <div id="calendar"></div>
+    <h1>Calendrier des Événements du Chœur</h1>
 
-  <!-- Pop-up -->
-  <div id="popup" style="display:none;position:fixed;top:20%;left:40%;background:#fff;padding:20px;border:1px solid #444;z-index:1000;">
-    <span id="popup-close" style="cursor:pointer;float:right;">&#x274C;</span>
-    <h2 id="popup-title"></h2>
-    <p><strong>Date :</strong> <span id="popup-date"></span></p>
-    <p><strong>Heure :</strong> <span id="popup-heure"></span></p>
-    <p><strong>Lieu :</strong> <span id="popup-lieu"></span></p>
-  </div>
+    <div class="calendar-nav">
+        <button id="prevMonth">Mois précédent</button>
+        <h2 id="currentMonthYear"></h2>
+        <button id="nextMonth">Mois suivant</button>
+    </div>
 
-  <script>
-    // Ton tableau (pour test; plus tard, charge depuis Sheets/CSV)
-    const concerts = [
-      { groupe: 'Les Rockeurs', date: '2024-07-11', heure: '20:00', lieu: 'Salle Omega' },
-      { groupe: 'Jazz Mania', date: '2024-07-11', heure: '21:30', lieu: 'Blue Club' },
-      { groupe: 'Pop Vibes', date: '2024-07-13', heure: '19:30', lieu: 'Parc Soleil' }
-    ];
+    <div class="calendar-grid" id="calendarGrid">
+        <div class="day-header">Lun</div>
+        <div class="day-header">Mar</div>
+        <div class="day-header">Mer</div>
+        <div class="day-header">Jeu</div>
+        <div class="day-header">Ven</div>
+        <div class="day-header">Sam</div>
+        <div class="day-header">Dim</div>
+    </div>
 
-    // Conversion en événements FullCalendar
-    const events = concerts.map(c => ({
-      title: c.groupe,
-      start: c.date + 'T' + c.heure,
-      extendedProps: {
-        heure: c.heure,
-        lieu: c.lieu,
-        groupe: c.groupe
-      }
-    }));
+    <div id="eventPopup" class="popup-overlay" style="display: none;">
+        <div class="popup-content">
+            <button class="close-btn" onclick="closeEventPopup()">&times;</button>
+            <h3 id="popupTitle"></h3>
+            <p><strong>Date :</strong> <span id="popupDate"></span></p>
+            <p><strong>Heure :</strong> <span id="popupTime"></span></p>
+            <p><strong>Lieu :</strong> <span id="popupLocation"></span></p>
+            <p><strong>Formation/Programme :</strong> <span id="popupFormationProgramme"></span></p>
+            <p><strong>Description :</strong> <span id="popupDescription"></span></p>
+        </div>
+    </div>
 
-    document.addEventListener('DOMContentLoaded', function() {
-      const calendarEl = document.getElementByIdundefined
+    <script>
+        // *** REMPLACEZ CETTE URL par l'URL RAW de votre Gist JSON (ou de votre fichier JSON dans votre dépôt GitHub) ***
+        const dataUrl = 'VOTRE_URL_RAW_GIST_JSON_ICI'; 
+        let allEvents = [];
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+
+        const monthNames = [
+            "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+            "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+        ];
+        const dayNames = ["Lun", "Mar", "Mer", "Jeu", "Ven", "Sam", "Dim"];
+
+        // Fonction pour récupérer les événements depuis le fichier JSON
+        async function fetchEvents() {
+            console.log("Tentative de récupération des données depuis :", dataUrl);
+            try {
+                const response = await fetch(dataUrl);
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status} - ${response.statusText}`);
+                }
+                const data = await response.json(); // Récupère le JSON
+                console.log("Données JSON récupérées :", data); 
+                allEvents = parseJSON(data); // Parse le JSON
+                console.log("Événements parsés (allEvents) :", allEvents);
+            } catch (error) {
+                console.error('Erreur lors de la récupération ou du traitement des événements :', error);
+                document.getElementById('calendarGrid').innerHTML = '<p style="text-align: center; color: red; grid-column: 1 / -1;">Impossible de charger les événements. Vérifiez l\'URL du fichier de données et son format.</p>';
+            }
+        }
+
+        // Fonction pour parser les données JSON
+        function parseJSON(jsonData) {
+            const events = [];
+            if (!Array.isArray(jsonData)) {
+                console.error("Les données JSON ne sont pas un tableau. Veuillez vérifier le format de votre fichier JSON.");
+                return [];
+            }
+            jsonData.forEach(eventData => {
+                // Vérifie que les champs Date et Nom existent et ne sont pas vides
+                if (eventData.Date && eventData.Nom) {
+                    events.push({
+                        date: eventData.Date, // Devra être au format AAAA-MM-JJ
+                        title: eventData.Nom,
+                        time: eventData.Horaire || 'Non spécifié',
+                        location: eventData.Lieu || 'Non spécifié',
+                        // Accès aux propriétés avec des caractères spéciaux via les crochets
+                        formationProgramme: eventData['Formation'] || eventData.Programme || 'Non spécifié', 
+                        description: eventData.Description || 'Aucune description.'
+                    });
+                } else {
+                    console.warn("Ligne ignorée : 'Date' ou 'Nom' manquants dans l'événement :", eventData);
+                }
+            });
+            console.log("Parsing terminé. Total d'événements valides trouvés :", events.length);
+            return events;
+        }
+
+        // Fonction pour générer le calendrier
+        function generateCalendar() {
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = ''; // Clear previous grid
+            
+            // Re-add day headers
+            dayNames.forEach(day => {
+                const dayHeader = document.createElement('div');
+                dayHeader.className = 'day-header';
+                dayHeader.textContent = day;
+                calendarGrid.appendChild(dayHeader);
+            });
+
+            document.getElementById('currentMonthYear').textContent = 
+                `${monthNames[currentMonth]} ${currentYear}`;
+
+            const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+            // Get day of week (0 for Sunday, 1 for Monday, etc.). Adjust for Monday start (0=Lun, 6=Dim)
+            let startDay = firstDayOfMonth.getDay();
+            startDay = (startDay === 0) ? 6 : startDay - 1; // Adjust Sunday (0) to be 6 (last day)
+
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const prevMonthDays = new Date(currentYear, currentMonth, 0).getDate();
+
+            // Fill leading empty days (from previous month)
+            for (let i = 0; i < startDay; i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day outside-month';
+                dayDiv.innerHTML = `<span class="day-number">${prevMonthDays - startDay + i + 1}</span>`;
+                calendarGrid.appendChild(dayDiv);
+            }
+
+            // Fill days of the current month
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day current-month';
+                dayDiv.innerHTML = `<span class="day-number">${day}</span>`;
+
+                const formattedDate = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                
+                const dayEvents = allEvents.filter(event => event.date === formattedDate);
+                
+                // console.log(`Jour ${formattedDate}: ${dayEvents.length} événements trouvés.`); // Debugging line
+
+                dayEvents.forEach(event => {
+                    const eventElement = document.createElement('div');
+                    eventElement.className = 'event';
+                    eventElement.textContent = event.title; // Afficher seulement le titre dans la case
+                    eventElement.onclick = () => showEventDetailsPopup(event);
+                    dayDiv.appendChild(eventElement);
+                });
+
+                calendarGrid.appendChild(dayDiv);
+            }
+
+            // Fill trailing empty days (from next month)
+            const totalDaysRendered = startDay + daysInMonth;
+            const remainingCells = 42 - totalDaysRendered; // 6 rows * 7 days = 42 cells total for a full calendar view
+            for (let i = 1; i <= remainingCells; i++) {
+                const dayDiv = document.createElement('div');
+                dayDiv.className = 'calendar-day outside-month';
+                dayDiv.innerHTML = `<span class="day-number">${i}</span>`;
+                calendarGrid.appendChild(dayDiv);
+            }
+        }
+
+        // Fonction pour afficher la popup des détails de l'événement
+        function showEventDetailsPopup(event) {
+            document.getElementById('popupTitle').textContent = event.title;
+            document.getElementById('popupDate').textContent = event.date;
+            document.getElementById('popupTime').textContent = event.time;
+            document.getElementById('popupLocation').textContent = event.location;
+            document.getElementById('popupFormationProgramme').textContent = event.formationProgramme;
+            document.getElementById('popupDescription').textContent = event.description;
+            document.getElementById('eventPopup').style.display = 'flex';
+        }
+
+        // Fonction pour fermer la popup
+        function closeEventPopup() {
+            document.getElementById('eventPopup').style.display = 'none';
+        }
+
+        // Gestion des boutons de navigation
+        document.getElementById('prevMonth').addEventListener('click', () => {
+            currentMonth--;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            }
+            generateCalendar();
+        });
+
+        document.getElementById('nextMonth').addEventListener('click', () => {
+            currentMonth++;
+            if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            generateCalendar();
+        });
+
+        // Initialisation : Charger les événements puis générer le calendrier
+        fetchEvents().then(generateCalendar);
+    </script>
+</body>
+</html>
