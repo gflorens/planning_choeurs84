@@ -327,13 +327,13 @@
 
                 // Assurez-vous que ces noms de propriété (ex: Date, Titre_Evenement)
                 // correspondent aux en-têtes réels de votre feuille Google Sheet.
-                if (event.Date && event.Titre_Evenement) { // Les champs obligatoires pour un événement
+                if (event.Date && event.Nom) { // Les champs obligatoires pour un événement
                     events.push({
                         date: event.Date, // Format YYYY-MM-DD attendu par Date()
-                        title: event.Titre_Evenement,
+                        title: event.Nom,
                         time: event.Heure || 'Heure non spécifiée',
                         location: event.Lieu || 'Lieu non spécifié',
-                        description: event.Description || 'Pas de description.'
+                        description: event.Programme || 'Pas de description.'
                     });
                 }
             }
