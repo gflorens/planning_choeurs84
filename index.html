@@ -55,4 +55,249 @@
 
     .jours {
       display: grid;
-      grid-tem
+      grid-template-columns: repeat(7, 1fr);
+      background-color: var(--couleur-secondaire);
+      color: white;
+      padding: 0.5em;
+      border-radius: var(--rayon);
+    }
+
+    .jours div {
+      text-align: center;
+      font-weight: bold;
+    }
+
+    .grille {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: var(--espace);
+    }
+
+    .case {
+      background-color: white;
+      border: var(--bordure);
+      border-radius: var(--rayon);
+      padding: 0.5em;
+      min-height: 80px;
+      box-shadow: var(--ombre);
+      position: relative;
+    }
+
+    .jour-numero {
+      font-size: 0.8em;
+      color: gray;
+    }
+
+    .evenement {
+      background-color: var(--couleur-evenement);
+      color: white;
+      padding: 2px 4px;
+      border-radius: 4px;
+      margin-top: 4px;
+      cursor: pointer;
+      font-size: 0.8em;
+    }
+
+    .modale {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+
+    .modale-contenu {
+      background: white;
+      padding: 1em;
+      border-radius: var(--rayon);
+      max-width: 400px;
+      box-shadow: var(--ombre);
+    }
+
+    .modale h2 {
+      margin-top: 0;
+    }
+
+    button {
+      background: var(--couleur-secondaire);
+      border: none;
+      color: white;
+      padding: 0.5em;
+      border-radius: var(--rayon);
+      cursor: pointer;
+      margin-top: 1em;
+    }
+
+    @media (max-width: 600px) {
+      .grille, .jours {
+        grid-template-columns: repeat(7, 1fr);
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Planning Chœur</h1>
+</header>
+
+<main>
+  <div class="calendrier">
+    <div class="navigation">
+      <button id="moisPrecedent">← Mois précédent</button>
+      <h2 id="titreMois"></h2>
+      <button id="moisSuivant">Mois suivant →</button>
+    </div>
+    <div class="jours">
+      <div>Lu</div><div>Ma</div><div>Me</div><div>Je</div><div>Ve</div><div>Sa</div><div>Di</div>
+    </div>
+    <div class="grille" id="grilleCalendrier"></div>
+  </div>
+</main>
+
+<div class="modale" id="modaleEvenement">
+  <div class="modale-contenu" id="contenuEvenement">
+    <!-- contenu JS -->
+  </div>
+</div>
+
+<footer>
+  <p>© Gflorens — Licence GPL</p>
+  <p>
+    Code disponible sur
+    <a href="https://forge.apps.education.fr/Gflorens/planning-choeur" target="_blank">ce dépôt</a> —
+    Pour rapporter un bug vous pouvez
+    <a href="https://forge.apps.education.fr/Gflorens/planning-choeur/-/issues" target="_blank">déposer un ticket</a>
+  </p>
+</footer>
+
+<script>
+  // === PARAMÈTRES GLOBAUX ===
+  let moisActuel = new Date().getMonth();
+  let anneeActuelle = new Date().getFullYear();
+
+  // URL publique de la Google Sheet publiée au format JSON
+  const ID_FEUILLE = "1WufVZLWWirYhvEOk1YCPaZd3WUw7-w8xPaEaOCaYSoo";
+  const URL_GOOGLE_SHEET = `https://docs.google.com/spreadsheets/d/${ID_FEUILLE}/gviz/tq?tqx=out:json`;
+
+  // === RÉFÉRENCES DOM ===
+  const titreMois = document.getElementById("titreMois");
+  const grilleCalendrier = document.getElementById("grilleCalendrier");
+  const modaleEvenement = document.getElementById("modaleEvenement");
+  const contenuEvenement = document.getElementById("contenuEvenement");
+
+  // === FONCTION : Convertit une chaîne JJ/MM/AAAA en objet Date ===
+  function convertirEnDate(str) {
+    const [jour, mois, annee] = str.split("/");
+    return new Date(`${annee}-${mois}-${jour}`);
+  }
+
+  // === FONCTION : Affiche le mois courant dans le calendrier ===
+  function afficherCalendrier(evenements) {
+    console.log("Affichage du calendrier pour", moisActuel + 1, anneeActuelle);
+
+    const premierJour = new Date(anneeActuelle, moisActuel, 1);
+    const dernierJour = new Date(anneeActuelle, moisActuel + 1, 0);
+    const debutSemaine = (premierJour.getDay() + 6) % 7; // lundi=0
+
+    const joursDansMois = dernierJour.getDate();
+    titreMois.textContent = `${premierJour.toLocaleString('fr-FR', { month: 'long' })} ${anneeActuelle}`;
+
+    grilleCalendrier.innerHTML = "";
+
+    // Cases vides au début
+    for (let i = 0; i < debutSemaine; i++) {
+      grilleCalendrier.innerHTML += `<div></div>`;
+    }
+
+    // Création des cases du mois
+    for (let jour = 1; jour <= joursDansMois; jour++) {
+      const dateCourante = new Date(anneeActuelle, moisActuel, jour);
+      const caseDiv = document.createElement("div");
+      caseDiv.className = "case";
+      caseDiv.innerHTML = `<div class="jour-numero">${jour}</div>`;
+
+      // Ajout des événements du jour
+      const clef = dateCourante.toISOString().slice(0,10);
+      const duJour = evenements[clef] || [];
+
+      duJour.forEach((evt, index) => {
+        const evtDiv = document.createElement("div");
+        evtDiv.className = "evenement";
+        evtDiv.textContent = evt.formation;
+        evtDiv.onclick = () => afficherDetailsEvenement(evt);
+        caseDiv.appendChild(evtDiv);
+      });
+
+      grilleCalendrier.appendChild(caseDiv);
+    }
+  }
+
+  // === FONCTION : Affiche les détails dans une modale ===
+  function afficherDetailsEvenement(evenement) {
+    console.log("Affichage des détails :", evenement);
+    contenuEvenement.innerHTML = `
+      <h2>${evenement.nom}</h2>
+      <p><strong>Date :</strong> ${evenement.date}</p>
+      <p><strong>Heure :</strong> ${evenement.horaire}</p>
+      <p><strong>Lieu :</strong> ${evenement.lieu}</p>
+      <p><strong>Formation :</strong> ${evenement.formation}</p>
+      <p><strong>Programme :</strong> ${evenement.programme}</p>
+      <button onclick="fermerModale()">Retour au calendrier</button>
+    `;
+    modaleEvenement.style.display = "flex";
+  }
+
+  // === FONCTION : Ferme la modale ===
+  function fermerModale() {
+    modaleEvenement.style.display = "none";
+  }
+
+  // === FONCTION : Charge les événements depuis la Google Sheet ===
+  async function chargerEvenements() {
+    console.log("Chargement des données depuis Google Sheet...");
+    const reponse = await fetch(URL_GOOGLE_SHEET);
+    const texte = await reponse.text();
+    const json = JSON.parse(texte.substring(47).slice(0, -2));
+
+    let evenements = {};
+
+    // Boucle sur chaque ligne de données
+    json.table.rows.forEach(ligne => {
+      const [nom, date, horaire, lieu, formation, programme] = ligne.c.map(cell => cell?.v || "");
+      const dateObj = convertirEnDate(date);
+      const clef = dateObj.toISOString().slice(0, 10);
+      if (!evenements[clef]) evenements[clef] = [];
+      evenements[clef].push({ nom, date, horaire, lieu, formation, programme });
+    });
+
+    afficherCalendrier(evenements);
+  }
+
+  // === GESTION DES BOUTONS DE NAVIGATION ===
+  document.getElementById("moisSuivant").onclick = () => {
+    moisActuel++;
+    if (moisActuel > 11) {
+      moisActuel = 0;
+      anneeActuelle++;
+    }
+    chargerEvenements();
+  };
+
+  document.getElementById("moisPrecedent").onclick = () => {
+    moisActuel--;
+    if (moisActuel < 0) {
+      moisActuel = 11;
+      anneeActuelle--;
+    }
+    chargerEvenements();
+  };
+
+  // === INITIALISATION ===
+  chargerEvenements();
+</script>
+</body>
+</html>
+
