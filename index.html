@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Planning Chœur</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <style>
+    /* === Variables de thème vintage === */
+    :root {
+      --couleur-fond: #fdf6e3;
+      --couleur-principale: #586e75;
+      --couleur-secondaire: #b58900;
+      --couleur-texte: #002b36;
+      --couleur-evenement: #cb4b16;
+      --bordure: 1px solid #ccc;
+      --rayon: 6px;
+      --espace: 10px;
+      --ombre: 2px 2px 6px rgba(0,0,0,0.1);
+    }
+
+    body {
+      font-family: sans-serif;
+      background-color: var(--couleur-fond);
+      color: var(--couleur-texte);
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    header, footer {
+      background-color: var(--couleur-principale);
+      color: white;
+      text-align: center;
+      padding: 1em;
+    }
+
+    main {
+      flex: 1;
+      padding: 1em;
+    }
+
+    .calendrier {
+      max-width: 800px;
+      margin: auto;
+    }
+
+    .navigation {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1em;
+    }
+
+    .jours {
+      display: grid;
+      grid-tem
