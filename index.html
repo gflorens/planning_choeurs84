@@ -1,303 +1,467 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <title>Planning Chœur</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calendrier des Événements</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
 
-  <style>
-    /* === Variables de thème vintage === */
-    :root {
-      --couleur-fond: #fdf6e3;
-      --couleur-principale: #586e75;
-      --couleur-secondaire: #b58900;
-      --couleur-texte: #002b36;
-      --couleur-evenement: #cb4b16;
-      --bordure: 1px solid #ccc;
-      --rayon: 6px;
-      --espace: 10px;
-      --ombre: 2px 2px 6px rgba(0,0,0,0.1);
-    }
+        .calendar-container {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 900px;
+            box-sizing: border-box;
+        }
 
-    body {
-      font-family: sans-serif;
-      background-color: var(--couleur-fond);
-      color: var(--couleur-texte);
-      margin: 0;
-      display: flex;
-      flex-direction: column;
-      min-height: 100vh;
-    }
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #e0e0e0;
+        }
 
-    header, footer {
-      background-color: var(--couleur-principale);
-      color: white;
-      text-align: center;
-      padding: 1em;
-    }
+        .calendar-header h2 {
+            margin: 0;
+            color: #2c3e50;
+            font-size: 2em;
+            font-weight: 600;
+        }
 
-    main {
-      flex: 1;
-      padding: 1em;
-    }
+        .calendar-nav button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            margin: 0 5px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 1em;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+        }
 
-    .calendrier {
-      max-width: 800px;
-      margin: auto;
-    }
+        .calendar-nav button:hover {
+            background-color: #0056b3;
+            transform: translateY(-2px);
+        }
 
-    .navigation {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 1em;
-    }
+        .weekdays {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            text-align: center;
+            font-weight: bold;
+            color: #555;
+            margin-bottom: 10px;
+            padding: 10px 0;
+            background-color: #f0f0f0;
+            border-radius: 8px;
+        }
 
-    .jours {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      background-color: var(--couleur-secondaire);
-      color: white;
-      padding: 0.5em;
-      border-radius: var(--rayon);
-    }
+        .day-name {
+            padding: 8px 0;
+        }
 
-    .jours div {
-      text-align: center;
-      font-weight: bold;
-    }
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
 
-    .grille {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: var(--espace);
-    }
+        .calendar-day {
+            min-height: 90px;
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            position: relative;
+            background-color: #fdfdfd;
+            transition: background-color 0.2s ease, border-color 0.2s ease;
+        }
 
-    .case {
-      background-color: white;
-      border: var(--bordure);
-      border-radius: var(--rayon);
-      padding: 0.5em;
-      min-height: 80px;
-      box-shadow: var(--ombre);
-      position: relative;
-    }
+        .calendar-day:not(.current-month) {
+            background-color: #eceff1;
+            color: #aaa;
+            border-color: #dee2e6;
+            opacity: 0.7;
+        }
+        
+        .calendar-day.selected-day {
+            border: 2px solid #007bff;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.3);
+            background-color: #e6f2ff;
+        }
 
-    .jour-numero {
-      font-size: 0.8em;
-      color: gray;
-    }
+        .calendar-day.has-event {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+            cursor: pointer;
+            position: relative;
+        }
+        
+        .calendar-day.has-event:hover {
+            background-color: #c0d9e0;
+            border-color: #a7d9e4;
+        }
 
-    .evenement {
-      background-color: var(--couleur-evenement);
-      color: white;
-      padding: 2px 4px;
-      border-radius: 4px;
-      margin-top: 4px;
-      cursor: pointer;
-      font-size: 0.8em;
-    }
+        .calendar-day .day-number {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 5px;
+        }
 
-    .modale {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.5);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 10;
-    }
+        .event-indicator {
+            width: 8px;
+            height: 8px;
+            background-color: #007bff;
+            border-radius: 50%;
+            position: absolute;
+            top: 8px;
+            right: 8px;
+        }
 
-    .modale-contenu {
-      background: white;
-      padding: 1em;
-      border-radius: var(--rayon);
-      max-width: 400px;
-      box-shadow: var(--ombre);
-    }
+        .event-list {
+            position: absolute;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            padding: 15px;
+            z-index: 100;
+            min-width: 250px;
+            max-width: 350px;
+            top: 50%; /* Start higher */
+            left: 50%;
+            transform: translate(-50%, -50%); /* Center it */
+            max-height: 80vh;
+            overflow-y: auto;
+            display: none; /* Hidden by default */
+        }
+        .event-list.visible {
+            display: block;
+        }
 
-    .modale h2 {
-      margin-top: 0;
-    }
+        .event-list h3 {
+            margin-top: 0;
+            color: #007bff;
+            font-size: 1.3em;
+            margin-bottom: 10px;
+        }
 
-    button {
-      background: var(--couleur-secondaire);
-      border: none;
-      color: white;
-      padding: 0.5em;
-      border-radius: var(--rayon);
-      cursor: pointer;
-      margin-top: 1em;
-    }
+        .event-list p {
+            margin: 5px 0;
+            font-size: 0.9em;
+        }
+        .event-list p strong {
+            color: #555;
+        }
 
-    @media (max-width: 600px) {
-      .grille, .jours {
-        grid-template-columns: repeat(7, 1fr);
-      }
-    }
-  </style>
+        .event-list .close-button {
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            cursor: pointer;
+            color: #666;
+        }
+        .event-list .close-button:hover {
+            color: #333;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .calendar-container {
+                padding: 20px;
+                max-width: 100%;
+                margin: 10px;
+            }
+            .calendar-header {
+                flex-direction: column;
+                text-align: center;
+            }
+            .calendar-header h2 {
+                margin-bottom: 15px;
+                font-size: 1.8em;
+            }
+            .calendar-nav button {
+                padding: 8px 15px;
+                font-size: 0.9em;
+            }
+            .calendar-day {
+                min-height: 70px;
+                padding: 8px;
+            }
+            .calendar-day .day-number {
+                font-size: 1.2em;
+            }
+            .event-list {
+                max-width: 90%;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+            .calendar-day {
+                min-height: 60px;
+                font-size: 0.8em;
+            }
+            .event-indicator {
+                width: 6px;
+                height: 6px;
+                top: 5px;
+                right: 5px;
+            }
+            .event-list h3 {
+                font-size: 1.1em;
+            }
+            .event-list p {
+                font-size: 0.8em;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="calendar-container">
+        <div class="calendar-header">
+            <div class="calendar-nav">
+                <button id="prevMonth">Mois précédent</button>
+            </div>
+            <h2 id="currentMonthYear"></h2>
+            <div class="calendar-nav">
+                <button id="nextMonth">Mois suivant</button>
+            </div>
+        </div>
 
-<header>
-  <h1>Planning Chœur</h1>
-</header>
+        <div class="weekdays">
+            <div class="day-name">Lun</div>
+            <div class="day-name">Mar</div>
+            <div class="day-name">Mer</div>
+            <div class="day-name">Jeu</div>
+            <div class="day-name">Ven</div>
+            <div class="day-name">Sam</div>
+            <div class="day-name">Dim</div>
+        </div>
 
-<main>
-  <div class="calendrier">
-    <div class="navigation">
-      <button id="moisPrecedent">← Mois précédent</button>
-      <h2 id="titreMois"></h2>
-      <button id="moisSuivant">Mois suivant →</button>
+        <div id="calendarGrid" class="calendar-grid">
+            </div>
     </div>
-    <div class="jours">
-      <div>Lu</div><div>Ma</div><div>Me</div><div>Je</div><div>Ve</div><div>Sa</div><div>Di</div>
+
+    <div id="eventDetails" class="event-list">
+        <button class="close-button" onclick="closeEventDetails()">×</button>
+        <h3 id="eventDetailsDate"></h3>
+        <div id="eventDetailsList">
+            </div>
     </div>
-    <div class="grille" id="grilleCalendrier"></div>
-  </div>
-</main>
 
-<div class="modale" id="modaleEvenement">
-  <div class="modale-contenu" id="contenuEvenement">
-    <!-- contenu JS -->
-  </div>
-</div>
+    <script>
+        const googleSheetUrl = 'VOTRE_URL_PUBLIÉE_GOOGLE_SHEET_ICI'; // <-- REMPLACEZ CETTE URL !
+        let allEvents = [];
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+        let selectedDayElement = null; // Pour gérer la classe 'selected-day'
 
-<footer>
-  <p>© Gflorens — Licence GPL</p>
-  <p>
-    Code disponible sur
-    <a href="https://forge.apps.education.fr/Gflorens/planning-choeur" target="_blank">ce dépôt</a> —
-    Pour rapporter un bug vous pouvez
-    <a href="https://forge.apps.education.fr/Gflorens/planning-choeur/-/issues" target="_blank">déposer un ticket</a>
-  </p>
-</footer>
+        const monthNames = [
+            "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+            "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
+        ];
+        const weekdaysNames = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"]; // Pour le calcul du jour de la semaine
 
-<script>
-  // === PARAMÈTRES GLOBAUX ===
-  let moisActuel = new Date().getMonth();
-  let anneeActuelle = new Date().getFullYear();
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchEvents();
+            document.getElementById('prevMonth').addEventListener('click', () => changeMonth(-1));
+            document.getElementById('nextMonth').addEventListener('click', () => changeMonth(1));
+        });
 
-  // URL publique de la Google Sheet publiée au format JSON
-  const ID_FEUILLE = "1WufVZLWWirYhvEOk1YCPaZd3WUw7-w8xPaEaOCaYSoo";
-  const URL_GOOGLE_SHEET = `https://docs.google.com/spreadsheets/d/${ID_FEUILLE}/gviz/tq?tqx=out:json`;
+        async function fetchEvents() {
+            try {
+                const response = await fetch(googleSheetUrl);
+                const data = await response.text();
+                allEvents = parseCSV(data);
+                generateCalendar();
+            } catch (error) {
+                console.error('Erreur lors de la récupération des événements :', error);
+                document.getElementById('calendarGrid').innerHTML = '<p style="text-align: center; color: red;">Impossible de charger les événements. Vérifiez l\'URL de la feuille Google Sheet et sa publication.</p>';
+            }
+        }
 
-  // === RÉFÉRENCES DOM ===
-  const titreMois = document.getElementById("titreMois");
-  const grilleCalendrier = document.getElementById("grilleCalendrier");
-  const modaleEvenement = document.getElementById("modaleEvenement");
-  const contenuEvenement = document.getElementById("contenuEvenement");
+        function parseCSV(csvText) {
+            const lines = csvText.split('\n').filter(line => line.trim() !== '');
+            if (lines.length === 0) return [];
 
-  // === FONCTION : Convertit une chaîne JJ/MM/AAAA en objet Date ===
-  function convertirEnDate(str) {
-    const [jour, mois, annee] = str.split("/");
-    return new Date(`${annee}-${mois}-${jour}`);
-  }
+            const headers = lines[0].split(',').map(header => header.trim());
+            const events = [];
 
-  // === FONCTION : Affiche le mois courant dans le calendrier ===
-  function afficherCalendrier(evenements) {
-    console.log("Affichage du calendrier pour", moisActuel + 1, anneeActuelle);
+            for (let i = 1; i < lines.length; i++) {
+                const values = lines[i].split(',').map(value => value.trim());
+                if (values.length !== headers.length) {
+                    console.warn(`Ligne mal formée ignorée (numéro ${i + 1}): "${lines[i]}"`);
+                    continue;
+                }
 
-    const premierJour = new Date(anneeActuelle, moisActuel, 1);
-    const dernierJour = new Date(anneeActuelle, moisActuel + 1, 0);
-    const debutSemaine = (premierJour.getDay() + 6) % 7; // lundi=0
+                const event = {};
+                headers.forEach((header, index) => {
+                    event[header] = values[index];
+                });
 
-    const joursDansMois = dernierJour.getDate();
-    titreMois.textContent = `${premierJour.toLocaleString('fr-FR', { month: 'long' })} ${anneeActuelle}`;
+                // Assurez-vous que ces noms de propriété (ex: Date, Titre_Evenement)
+                // correspondent aux en-têtes réels de votre feuille Google Sheet.
+                if (event.Date && event.Titre_Evenement) { // Les champs obligatoires pour un événement
+                    events.push({
+                        date: event.Date, // Format YYYY-MM-DD attendu par Date()
+                        title: event.Titre_Evenement,
+                        time: event.Heure || 'Heure non spécifiée',
+                        location: event.Lieu || 'Lieu non spécifié',
+                        description: event.Description || 'Pas de description.'
+                    });
+                }
+            }
+            return events;
+        }
 
-    grilleCalendrier.innerHTML = "";
+        function generateCalendar() {
+            const calendarGrid = document.getElementById('calendarGrid');
+            calendarGrid.innerHTML = ''; // Vide la grille actuelle
 
-    // Cases vides au début
-    for (let i = 0; i < debutSemaine; i++) {
-      grilleCalendrier.innerHTML += `<div></div>`;
-    }
+            document.getElementById('currentMonthYear').textContent = `${monthNames[currentMonth]} ${currentYear}`;
 
-    // Création des cases du mois
-    for (let jour = 1; jour <= joursDansMois; jour++) {
-      const dateCourante = new Date(anneeActuelle, moisActuel, jour);
-      const caseDiv = document.createElement("div");
-      caseDiv.className = "case";
-      caseDiv.innerHTML = `<div class="jour-numero">${jour}</div>`;
+            const firstDayOfMonth = new Date(currentYear, currentMonth, 1);
+            // Corriger le premier jour pour qu'il commence le lundi (0=Dim, 1=Lun, ..., 6=Sam)
+            // Si le premier jour du mois est un dimanche (0), il doit aller après le samedi (6)
+            let startDay = firstDayOfMonth.getDay(); // 0 (Dim) - 6 (Sam)
+            // Ajuste pour que Lundi = 0, Dimanche = 6
+            startDay = (startDay === 0) ? 6 : startDay - 1; // 0=Lun, ..., 5=Sam, 6=Dim
 
-      // Ajout des événements du jour
-      const clef = dateCourante.toISOString().slice(0,10);
-      const duJour = evenements[clef] || [];
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const daysInPrevMonth = new Date(currentYear, currentMonth, 0).getDate();
 
-      duJour.forEach((evt, index) => {
-        const evtDiv = document.createElement("div");
-        evtDiv.className = "evenement";
-        evtDiv.textContent = evt.formation;
-        evtDiv.onclick = () => afficherDetailsEvenement(evt);
-        caseDiv.appendChild(evtDiv);
-      });
+            // Remplir les jours du mois précédent
+            for (let i = 0; i < startDay; i++) {
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('calendar-day', 'other-month', 'prev-month');
+                dayElement.innerHTML = `<span class="day-number">${daysInPrevMonth - startDay + 1 + i}</span>`;
+                calendarGrid.appendChild(dayElement);
+            }
 
-      grilleCalendrier.appendChild(caseDiv);
-    }
-  }
+            // Remplir les jours du mois actuel
+            for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(currentYear, currentMonth, day);
+                const formattedDate = date.toISOString().split('T')[0]; // YYYY-MM-DD
+                const dayEvents = allEvents.filter(event => event.date === formattedDate);
 
-  // === FONCTION : Affiche les détails dans une modale ===
-  function afficherDetailsEvenement(evenement) {
-    console.log("Affichage des détails :", evenement);
-    contenuEvenement.innerHTML = `
-      <h2>${evenement.nom}</h2>
-      <p><strong>Date :</strong> ${evenement.date}</p>
-      <p><strong>Heure :</strong> ${evenement.horaire}</p>
-      <p><strong>Lieu :</strong> ${evenement.lieu}</p>
-      <p><strong>Formation :</strong> ${evenement.formation}</p>
-      <p><strong>Programme :</strong> ${evenement.programme}</p>
-      <button onclick="fermerModale()">Retour au calendrier</button>
-    `;
-    modaleEvenement.style.display = "flex";
-  }
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('calendar-day', 'current-month');
+                dayElement.innerHTML = `<span class="day-number">${day}</span>`;
 
-  // === FONCTION : Ferme la modale ===
-  function fermerModale() {
-    modaleEvenement.style.display = "none";
-  }
+                if (dayEvents.length > 0) {
+                    dayElement.classList.add('has-event');
+                    dayElement.innerHTML += '<div class="event-indicator"></div>';
+                    dayElement.dataset.date = formattedDate; // Stocke la date pour l'affichage des détails
+                    dayElement.addEventListener('click', () => showEventDetails(dayEvents, formattedDate, dayElement));
+                }
 
-  // === FONCTION : Charge les événements depuis la Google Sheet ===
-  async function chargerEvenements() {
-    console.log("Chargement des données depuis Google Sheet...");
-    const reponse = await fetch(URL_GOOGLE_SHEET);
-    const texte = await reponse.text();
-    const json = JSON.parse(texte.substring(47).slice(0, -2));
+                calendarGrid.appendChild(dayElement);
+            }
 
-    let evenements = {};
+            // Remplir les jours du mois suivant pour compléter la dernière semaine
+            const totalCells = startDay + daysInMonth;
+            const remainingCells = 42 - totalCells; // Max 6 semaines * 7 jours = 42 cells
+            const daysInNextMonthToShow = (totalCells % 7 === 0) ? 0 : (7 - (totalCells % 7)); // Fill current row
 
-    // Boucle sur chaque ligne de données
-    json.table.rows.forEach(ligne => {
-      const [nom, date, horaire, lieu, formation, programme] = ligne.c.map(cell => cell?.v || "");
-      const dateObj = convertirEnDate(date);
-      const clef = dateObj.toISOString().slice(0, 10);
-      if (!evenements[clef]) evenements[clef] = [];
-      evenements[clef].push({ nom, date, horaire, lieu, formation, programme });
-    });
+            for (let i = 1; i <= daysInNextMonthToShow; i++) {
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('calendar-day', 'other-month', 'next-month');
+                dayElement.innerHTML = `<span class="day-number">${i}</span>`;
+                calendarGrid.appendChild(dayElement);
+            }
 
-    afficherCalendrier(evenements);
-  }
+            // Si le calendrier n'a que 5 lignes, ajouter une 6ème ligne pour la cohérence
+            // C'est un peu plus complexe à gérer dynamiquement si on veut 6 lignes fixes.
+            // Pour l'instant, le code remplit jusqu'à la fin de la dernière semaine incomplète.
+            // Si vous souhaitez toujours 6 lignes, il faut ajouter des jours du mois suivant
+            // jusqu'à atteindre 42 cellules au total.
+            while (calendarGrid.children.length < 42) { // S'assure d'avoir 6 lignes complètes
+                const dayElement = document.createElement('div');
+                dayElement.classList.add('calendar-day', 'other-month', 'next-month');
+                dayElement.innerHTML = `<span class="day-number">${calendarGrid.children.length - totalCells + 1}</span>`;
+                calendarGrid.appendChild(dayElement);
+            }
+        }
 
-  // === GESTION DES BOUTONS DE NAVIGATION ===
-  document.getElementById("moisSuivant").onclick = () => {
-    moisActuel++;
-    if (moisActuel > 11) {
-      moisActuel = 0;
-      anneeActuelle++;
-    }
-    chargerEvenements();
-  };
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            } else if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            generateCalendar();
+            closeEventDetails(); // Cache les détails si on change de mois
+            if (selectedDayElement) {
+                selectedDayElement.classList.remove('selected-day');
+                selectedDayElement = null;
+            }
+        }
 
-  document.getElementById("moisPrecedent").onclick = () => {
-    moisActuel--;
-    if (moisActuel < 0) {
-      moisActuel = 11;
-      anneeActuelle--;
-    }
-    chargerEvenements();
-  };
+        function showEventDetails(events, date, dayElement) {
+            if (selectedDayElement) {
+                selectedDayElement.classList.remove('selected-day');
+            }
+            selectedDayElement = dayElement;
+            selectedDayElement.classList.add('selected-day');
 
-  // === INITIALISATION ===
-  chargerEvenements();
-</script>
+            const eventDetailsDiv = document.getElementById('eventDetails');
+            const eventDetailsDate = document.getElementById('eventDetailsDate');
+            const eventDetailsList = document.getElementById('eventDetailsList');
+
+            eventDetailsDate.textContent = `Événements du ${new Date(date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}`;
+            eventDetailsList.innerHTML = '';
+
+            events.forEach(event => {
+                const eventItem = document.createElement('div');
+                eventItem.classList.add('event-item'); // Vous pouvez ajouter un style pour '.event-item'
+                eventItem.innerHTML = `
+                    <h4>${event.title}</h4>
+                    <p><strong>Heure :</strong> ${event.time}</p>
+                    <p><strong>Lieu :</strong> ${event.location}</p>
+                    <p><strong>Description :</strong> ${event.description}</p>
+                `;
+                eventDetailsList.appendChild(eventItem);
+            });
+
+            eventDetailsDiv.classList.add('visible');
+        }
+
+        function closeEventDetails() {
+            document.getElementById('eventDetails').classList.remove('visible');
+            if (selectedDayElement) {
+                selectedDayElement.classList.remove('selected-day');
+                selectedDayElement = null;
+            }
+        }
+    </script>
 </body>
 </html>
-
